@@ -20,9 +20,7 @@ namespace PixelLab
             this.button3 = new System.Windows.Forms.Button();
             this.lblImageInfo = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
+            this.btnRGB = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
@@ -127,56 +125,42 @@ namespace PixelLab
             this.pictureBox2.TabStop = false;
 
             // ── color space buttons ────────────────────────────────────────
-            this.button1.Location = new System.Drawing.Point(35, 587);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.Text = "red";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.btnRGB.Location = new System.Drawing.Point(35, 587);
+            this.btnRGB.Name = "btnRGB";
+            this.btnRGB.Size = new System.Drawing.Size(75, 23);
+            this.btnRGB.Text = "RGB";
+            this.btnRGB.UseVisualStyleBackColor = true;
+            this.btnRGB.Click += new System.EventHandler(this.btnRGB_Click);
 
-            this.button4.Location = new System.Drawing.Point(117, 587);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.Text = "green";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
-
-            this.button5.Location = new System.Drawing.Point(199, 587);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(75, 23);
-            this.button5.Text = "blue";
-            this.button5.UseVisualStyleBackColor = true;
-            this.button5.Click += new System.EventHandler(this.button5_Click);
-
-            this.button7.Location = new System.Drawing.Point(281, 587);
+            this.button7.Location = new System.Drawing.Point(117, 587);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(75, 23);
             this.button7.Text = "CMY";
             this.button7.UseVisualStyleBackColor = true;
             this.button7.Click += new System.EventHandler(this.button7_Click);
 
-            this.button6.Location = new System.Drawing.Point(363, 587);
+            this.button6.Location = new System.Drawing.Point(199, 587);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(75, 23);
             this.button6.Text = "HSV";
             this.button6.UseVisualStyleBackColor = true;
             this.button6.Click += new System.EventHandler(this.button6_Click_1);
 
-            this.button8.Location = new System.Drawing.Point(445, 587);
+            this.button8.Location = new System.Drawing.Point(281, 587);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(75, 23);
             this.button8.Text = "YCbCr";
             this.button8.UseVisualStyleBackColor = true;
             this.button8.Click += new System.EventHandler(this.button8_Click);
 
-            this.button9.Location = new System.Drawing.Point(527, 587);
+            this.button9.Location = new System.Drawing.Point(363, 587);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(75, 23);
             this.button9.Text = "YUV";
             this.button9.UseVisualStyleBackColor = true;
             this.button9.Click += new System.EventHandler(this.button9_Click);
 
-            this.button10.Location = new System.Drawing.Point(609, 587);
+            this.button10.Location = new System.Drawing.Point(445, 587);
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(75, 23);
             this.button10.Text = "LAB";
@@ -403,6 +387,7 @@ namespace PixelLab
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1548, 645);
+            this.Controls.Add(this.btnRGB);
             this.Controls.Add(this.btnOpen3D);
             this.Controls.Add(this.grpQuantize);
             this.Controls.Add(this.grpPixelInfo);
@@ -412,9 +397,6 @@ namespace PixelLab
             this.Controls.Add(this.button8);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.button6);
-            this.Controls.Add(this.button5);
-            this.Controls.Add(this.button4);
-            this.Controls.Add(this.button1);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.lblImageInfo);
             this.Controls.Add(this.button3);
@@ -449,9 +431,6 @@ namespace PixelLab
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Label lblImageInfo;
         private System.Windows.Forms.PictureBox pictureBox2;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.Button button7;
         private System.Windows.Forms.Button button8;
@@ -486,6 +465,7 @@ namespace PixelLab
         private System.Windows.Forms.Label lblQuantize;
         private System.Windows.Forms.TrackBar trkQuantize;
         private System.Windows.Forms.Button btnResetQuantize;
+        private System.Windows.Forms.Button btnRGB;
         private System.Windows.Forms.Button btnOpen3D;
     }
 }

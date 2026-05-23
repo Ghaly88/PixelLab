@@ -1,12 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.CvEnum;
@@ -15,308 +10,195 @@ namespace PixelLab
 {
     public partial class Form1 : Form
     {
+        private enum CsMode { RGB, CMY, HSV, YCbCr, YUV, LAB }
+        private CsMode _csMode = CsMode.RGB;
+        private bool _suppressAdjustments = false;
+
+        private static readonly string[][] _csLabels =
+        {
+            new[] { "Red",       "Green",      "Blue"   },
+            new[] { "Cyan",      "Magenta",    "Yellow" },
+            new[] { "Hue",       "Saturation", "Value"  },
+            new[] { "Y (Luma)",  "Cr",         "Cb"     },
+            new[] { "Y (Luma)",  "U",          "V"      },
+            new[] { "L (Light)", "a*",         "b*"     },
+        };
+
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void lblImageInfo_Load(object sender, EventArgs e)
-        {
-        }
+        private void lblImageInfo_Load(object sender, EventArgs e) { }
+
+        // ── Load / Save / Reset ───────────────────────────────────────────
 
         private void load_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp";
+            OpenFileDialog dlg = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp" };
+            if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                Bitmap loadedImage = new Bitmap(openFileDialog.FileName);
-                pictureBox1.Image = loadedImage;
-                pictureBox2.Image = new Bitmap(loadedImage);
+            Bitmap loaded = new Bitmap(dlg.FileName);
+            pictureBox1.Image = loaded;
+            pictureBox2.Image = new Bitmap(loaded);
 
-                System.IO.FileInfo fileInfo = new System.IO.FileInfo(openFileDialog.FileName);
-                string fileName = fileInfo.Name;
-                long fileSizeInKB = fileInfo.Length / 1024;
-                string format = System.IO.Path.GetExtension(openFileDialog.FileName).TrimStart('.').ToUpper();
+            var fi = new System.IO.FileInfo(dlg.FileName);
+            lblImageInfo.Text = $"Image: {fi.Name}\nSize: {fi.Length / 1024} KB\n" +
+                                $"Dimensions: {loaded.Width} x {loaded.Height}\n" +
+                                $"Format: {System.IO.Path.GetExtension(dlg.FileName).TrimStart('.').ToUpper()}";
 
-                lblImageInfo.Text = $"Image: {fileName}\nSize: {fileSizeInKB} KB\nDimensions: {loadedImage.Width} x {loadedImage.Height}\nFormat: {format}";
-            }
+            SetColorSpace(CsMode.RGB);
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
             if (pictureBox1.Image != null)
-            {
                 pictureBox2.Image = new Bitmap(pictureBox1.Image);
-            }
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if (pictureBox2.Image != null)
+            if (pictureBox2.Image == null) { MessageBox.Show("No image to save!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            SaveFileDialog dlg = new SaveFileDialog { Filter = "JPEG Image|*.jpg|PNG Image|*.png|Bitmap Image|*.bmp", Title = "Save Modified Image" };
+            if (dlg.ShowDialog() == DialogResult.OK)
             {
-                SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.Filter = "JPEG Image|*.jpg|PNG Image|*.png|Bitmap Image|*.bmp";
-                saveFileDialog.Title = "Save Modified Image";
-
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    pictureBox2.Image.Save(saveFileDialog.FileName);
-                    MessageBox.Show("Image saved successfully!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            else
-            {
-                MessageBox.Show("No image to save!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                pictureBox2.Image.Save(dlg.FileName);
+                MessageBox.Show("Image saved successfully!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
-        private void button5_Click(object sender, EventArgs e)
+        // ── Color space conversion buttons ────────────────────────────────
+
+        private void button7_Click(object sender, EventArgs e)   // CMY
         {
-            if (pictureBox1.Image != null)
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Bitmap blueOnly = new Bitmap(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color p = bmp.GetPixel(x, y);
-                        blueOnly.SetPixel(x, y, Color.FromArgb(0, 0, p.B));
-                    }
-                pictureBox2.Image = blueOnly;
-                bmp.Dispose();
-            }
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image != null)
-            {
-                Bitmap rgbImage = new Bitmap(pictureBox1.Image);
-                Bitmap redComponentImage = new Bitmap(rgbImage.Width, rgbImage.Height);
-
-                for (int y = 0; y < rgbImage.Height; y++)
-                    for (int x = 0; x < rgbImage.Width; x++)
-                    {
-                        Color pixelColor = rgbImage.GetPixel(x, y);
-                        redComponentImage.SetPixel(x, y, Color.FromArgb(pixelColor.R, 0, 0));
-                    }
-
-                pictureBox2.Image = redComponentImage;
-                rgbImage.Dispose();
-            }
-            else
-            {
-                MessageBox.Show("Please load an image first!");
-            }
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image != null)
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Bitmap greenOnly = new Bitmap(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color p = bmp.GetPixel(x, y);
-                        greenOnly.SetPixel(x, y, Color.FromArgb(0, p.G, 0));
-                    }
-                pictureBox2.Image = greenOnly;
-                bmp.Dispose();
-            }
-        }
-
-        private void button6_Click_1(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-
-            try
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color pixelColor = bmp.GetPixel(x, y);
-                        img[y, x] = new Bgr(pixelColor.B, pixelColor.G, pixelColor.R);
-                    }
-
-                Image<Hsv, byte> hsvImg = img.Convert<Hsv, byte>();
-                Image<Bgr, byte> bgrResult = hsvImg.Convert<Bgr, byte>();
-
-                Bitmap resultBmp = new Bitmap(hsvImg.Width, hsvImg.Height);
-                for (int y = 0; y < hsvImg.Height; y++)
-                    for (int x = 0; x < hsvImg.Width; x++)
-                    {
-                        var p = bgrResult[y, x];
-                        resultBmp.SetPixel(x, y, Color.FromArgb((int)p.Red, (int)p.Green, (int)p.Blue));
-                    }
-
-                pictureBox2.Image = resultBmp;
-
-                img.Dispose();
-                hsvImg.Dispose();
-                bgrResult.Dispose();
-                bmp.Dispose();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message);
-            }
-        }
-
-        private void button7_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-
-            Bitmap bmp = new Bitmap(pictureBox1.Image);
-            Bitmap result = new Bitmap(bmp.Width, bmp.Height);
-
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
+            Bitmap bmp = new Bitmap(pictureBox1.Image), result = new Bitmap(bmp.Width, bmp.Height);
             for (int y = 0; y < bmp.Height; y++)
-                for (int x = 0; x < bmp.Width; x++)
-                {
-                    Color p = bmp.GetPixel(x, y);
-                    int C = 255 - p.R;
-                    int M = 255 - p.G;
-                    int Y = 255 - p.B;
-                    result.SetPixel(x, y, Color.FromArgb(C, M, Y));
-                }
-
-            pictureBox2.Image = result;
-            bmp.Dispose();
+                for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); result.SetPixel(x, y, Color.FromArgb(255 - p.R, 255 - p.G, 255 - p.B)); }
+            pictureBox2.Image = result; bmp.Dispose();
+            SetColorSpace(CsMode.CMY);
         }
 
-        private void button8_Click(object sender, EventArgs e)
+        private void button6_Click_1(object sender, EventArgs e)   // HSV
         {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
             try
             {
                 Bitmap bmp = new Bitmap(pictureBox1.Image);
                 Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-
                 for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color p = bmp.GetPixel(x, y);
-                        img[y, x] = new Bgr(p.B, p.G, p.R);
-                    }
-
-                Mat dst = new Mat();
-                CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2YCrCb);
-                pictureBox2.Image = dst.ToBitmap();
-
-                img.Dispose();
-                dst.Dispose();
-                bmp.Dispose();
+                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
+                Image<Hsv, byte> hsv = img.Convert<Hsv, byte>();
+                Image<Bgr, byte> back = hsv.Convert<Bgr, byte>();
+                Bitmap result = new Bitmap(bmp.Width, bmp.Height);
+                for (int y = 0; y < bmp.Height; y++)
+                    for (int x = 0; x < bmp.Width; x++) { var p = back[y, x]; result.SetPixel(x, y, Color.FromArgb((int)p.Red, (int)p.Green, (int)p.Blue)); }
+                pictureBox2.Image = result;
+                img.Dispose(); hsv.Dispose(); back.Dispose(); bmp.Dispose();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            SetColorSpace(CsMode.HSV);
         }
 
-        private void button9_Click(object sender, EventArgs e)
+        private void button8_Click(object sender, EventArgs e)   // YCbCr
         {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
             try
             {
                 Bitmap bmp = new Bitmap(pictureBox1.Image);
                 Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-
                 for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color p = bmp.GetPixel(x, y);
-                        img[y, x] = new Bgr(p.B, p.G, p.R);
-                    }
-
-                Mat dst = new Mat();
-                CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Yuv);
+                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
+                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2YCrCb);
                 pictureBox2.Image = dst.ToBitmap();
-
-                img.Dispose();
-                dst.Dispose();
-                bmp.Dispose();
+                img.Dispose(); dst.Dispose(); bmp.Dispose();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            SetColorSpace(CsMode.YCbCr);
         }
 
-        private void button10_Click(object sender, EventArgs e)
+        private void button9_Click(object sender, EventArgs e)   // YUV
         {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
             try
             {
                 Bitmap bmp = new Bitmap(pictureBox1.Image);
                 Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-
                 for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        Color p = bmp.GetPixel(x, y);
-                        img[y, x] = new Bgr(p.B, p.G, p.R);
-                    }
-
-                Mat dst = new Mat();
-                CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Lab);
+                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
+                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Yuv);
                 pictureBox2.Image = dst.ToBitmap();
-
-                img.Dispose();
-                dst.Dispose();
-                bmp.Dispose();
+                img.Dispose(); dst.Dispose(); bmp.Dispose();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            SetColorSpace(CsMode.YUV);
         }
 
-        // ── Requirement 3: Channel Controls ───────────────────────────────
+        private void button10_Click(object sender, EventArgs e)   // LAB
+        {
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
+            try
+            {
+                Bitmap bmp = new Bitmap(pictureBox1.Image);
+                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
+                for (int y = 0; y < bmp.Height; y++)
+                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
+                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Lab);
+                pictureBox2.Image = dst.ToBitmap();
+                img.Dispose(); dst.Dispose(); bmp.Dispose();
+            }
+            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            SetColorSpace(CsMode.LAB);
+        }
+
+        // ── Color space tracker ───────────────────────────────────────────
+
+        private void SetColorSpace(CsMode mode)
+        {
+            _csMode = mode;
+            string[] n = _csLabels[(int)mode];
+
+            // Reset sliders to centre without each change firing ApplyChannelAdjustments
+            _suppressAdjustments = true;
+            trkR.Value = 0; trkG.Value = 0; trkB.Value = 0; trkBrightness.Value = 0;
+            chkR.Checked = true; chkG.Checked = true; chkB.Checked = true;
+            _suppressAdjustments = false;
+
+            lblRedOffset.Text   = $"{n[0]}: 0";
+            lblGreenOffset.Text = $"{n[1]}: 0";
+            lblBlueOffset.Text  = $"{n[2]}: 0";
+            lblBrightness.Text  = "Brightness: 0";
+            chkR.Text = n[0].Split(' ')[0] + " On";
+            chkG.Text = n[1].Split(' ')[0] + " On";
+            chkB.Text = n[2].Split(' ')[0] + " On";
+            grpChannels.Text = $"Channel Controls ({mode})";
+            // pictureBox2 is left as-is; the calling button already set the view
+        }
+
+        private void btnRGB_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null) return;
+            pictureBox2.Image = new Bitmap(pictureBox1.Image);
+            SetColorSpace(CsMode.RGB);
+        }
+
+        // ── Channel controls ──────────────────────────────────────────────
 
         private void trkR_ValueChanged(object sender, EventArgs e)
         {
-            lblRedOffset.Text = "Red Offset: " + trkR.Value;
+            lblRedOffset.Text = _csLabels[(int)_csMode][0] + ": " + trkR.Value;
             ApplyChannelAdjustments();
         }
 
         private void trkG_ValueChanged(object sender, EventArgs e)
         {
-            lblGreenOffset.Text = "Green Offset: " + trkG.Value;
+            lblGreenOffset.Text = _csLabels[(int)_csMode][1] + ": " + trkG.Value;
             ApplyChannelAdjustments();
         }
 
         private void trkB_ValueChanged(object sender, EventArgs e)
         {
-            lblBlueOffset.Text = "Blue Offset: " + trkB.Value;
+            lblBlueOffset.Text = _csLabels[(int)_csMode][2] + ": " + trkB.Value;
             ApplyChannelAdjustments();
         }
 
@@ -332,128 +214,183 @@ namespace PixelLab
 
         private void btnResetChannels_Click(object sender, EventArgs e)
         {
-            trkR.Value = 0;
-            trkG.Value = 0;
-            trkB.Value = 0;
-            trkBrightness.Value = 0;
-            chkR.Checked = true;
-            chkG.Checked = true;
-            chkB.Checked = true;
+            trkR.Value = 0; trkG.Value = 0; trkB.Value = 0; trkBrightness.Value = 0;
+            chkR.Checked = true; chkG.Checked = true; chkB.Checked = true;
             if (pictureBox1.Image != null)
                 pictureBox2.Image = new Bitmap(pictureBox1.Image);
         }
 
         private void ApplyChannelAdjustments()
         {
-            if (pictureBox1.Image == null) return;
+            if (_suppressAdjustments || pictureBox1.Image == null) return;
 
-            Bitmap src = new Bitmap(pictureBox1.Image);
-            Bitmap result = new Bitmap(src.Width, src.Height);
-
-            int rOffset = trkR.Value;
-            int gOffset = trkG.Value;
-            int bOffset = trkB.Value;
+            int off0 = trkR.Value, off1 = trkG.Value, off2 = trkB.Value;
             int brightness = trkBrightness.Value;
-            bool rOn = chkR.Checked;
-            bool gOn = chkG.Checked;
-            bool bOn = chkB.Checked;
+            bool on0 = chkR.Checked, on1 = chkG.Checked, on2 = chkB.Checked;
+            Bitmap src = new Bitmap(pictureBox1.Image);
 
-            for (int y = 0; y < src.Height; y++)
-                for (int x = 0; x < src.Width; x++)
+            switch (_csMode)
+            {
+                case CsMode.RGB:
                 {
-                    Color p = src.GetPixel(x, y);
-                    int r = rOn ? Clamp(p.R + rOffset + brightness, 0, 255) : 0;
-                    int g = gOn ? Clamp(p.G + gOffset + brightness, 0, 255) : 0;
-                    int b = bOn ? Clamp(p.B + bOffset + brightness, 0, 255) : 0;
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    Bitmap result = new Bitmap(src.Width, src.Height);
+                    for (int y = 0; y < src.Height; y++)
+                        for (int x = 0; x < src.Width; x++)
+                        {
+                            Color p = src.GetPixel(x, y);
+                            result.SetPixel(x, y, Color.FromArgb(
+                                on0 ? Clamp(p.R + off0 + brightness, 0, 255) : 0,
+                                on1 ? Clamp(p.G + off1 + brightness, 0, 255) : 0,
+                                on2 ? Clamp(p.B + off2 + brightness, 0, 255) : 0));
+                        }
+                    pictureBox2.Image = result;
+                    break;
                 }
-
-            pictureBox2.Image = result;
+                case CsMode.CMY:
+                {
+                    Bitmap result = new Bitmap(src.Width, src.Height);
+                    for (int y = 0; y < src.Height; y++)
+                        for (int x = 0; x < src.Width; x++)
+                        {
+                            Color p = src.GetPixel(x, y);
+                            int C = on0 ? Clamp(255 - p.R + off0 + brightness, 0, 255) : 0;
+                            int M = on1 ? Clamp(255 - p.G + off1 + brightness, 0, 255) : 0;
+                            int Y = on2 ? Clamp(255 - p.B + off2 + brightness, 0, 255) : 0;
+                            result.SetPixel(x, y, Color.FromArgb(255 - C, 255 - M, 255 - Y));
+                        }
+                    pictureBox2.Image = result;
+                    break;
+                }
+                // HSV: brightness → Value (channel 2)
+                case CsMode.HSV:
+                    pictureBox2.Image = ApplyViaEmgu(src, off0, off1, off2, brightness, on0, on1, on2,
+                                                     ColorConversion.Bgr2Hsv, ColorConversion.Hsv2Bgr, 2);
+                    break;
+                // YCbCr/YUV/LAB: brightness → luminance (channel 0)
+                case CsMode.YCbCr:
+                    pictureBox2.Image = ApplyViaEmgu(src, off0, off1, off2, brightness, on0, on1, on2,
+                                                     ColorConversion.Bgr2YCrCb, ColorConversion.YCrCb2Bgr, 0);
+                    break;
+                case CsMode.YUV:
+                    pictureBox2.Image = ApplyViaEmgu(src, off0, off1, off2, brightness, on0, on1, on2,
+                                                     ColorConversion.Bgr2Yuv, ColorConversion.Yuv2Bgr, 0);
+                    break;
+                case CsMode.LAB:
+                    pictureBox2.Image = ApplyViaEmgu(src, off0, off1, off2, brightness, on0, on1, on2,
+                                                     ColorConversion.Bgr2Lab, ColorConversion.Lab2Bgr, 0);
+                    break;
+            }
             src.Dispose();
         }
 
-        private int Clamp(int value, int min, int max)
+        // Converts src to target color space, applies per-channel offsets, converts back to RGB.
+        // brightnessChannel: which channel index (0/1/2) receives the brightness offset.
+        private Bitmap ApplyViaEmgu(Bitmap src,
+                                     int off0, int off1, int off2, int brightness,
+                                     bool on0, bool on1, bool on2,
+                                     ColorConversion fwd, ColorConversion inv,
+                                     int brightnessChannel)
         {
-            return Math.Max(min, Math.Min(max, value));
+            Image<Bgr, byte> bgrImg = new Image<Bgr, byte>(src.Width, src.Height);
+            for (int y = 0; y < src.Height; y++)
+                for (int x = 0; x < src.Width; x++)
+                { Color p = src.GetPixel(x, y); bgrImg[y, x] = new Bgr(p.B, p.G, p.R); }
+
+            Mat targetMat = new Mat();
+            CvInvoke.CvtColor(bgrImg.Mat, targetMat, fwd);
+
+            int rows = src.Height, cols = src.Width;
+            int step = (int)targetMat.Step;
+            byte[] data = new byte[rows * step];
+            Marshal.Copy(targetMat.DataPointer, data, 0, rows * step);
+
+            int[] offsets = { off0, off1, off2 };
+            bool[] ons    = { on0,  on1,  on2  };
+            for (int y = 0; y < rows; y++)
+                for (int x = 0; x < cols; x++)
+                {
+                    int i = y * step + x * 3;
+                    for (int ch = 0; ch < 3; ch++)
+                    {
+                        int brt = (ch == brightnessChannel) ? brightness : 0;
+                        data[i + ch] = ons[ch]
+                            ? (byte)Clamp(data[i + ch] + offsets[ch] + brt, 0, 255)
+                            : (byte)0;
+                    }
+                }
+
+            Mat modMat = new Mat(rows, cols, Emgu.CV.CvEnum.DepthType.Cv8U, 3);
+            int modStep = (int)modMat.Step;
+            for (int y = 0; y < rows; y++)
+                Marshal.Copy(data, y * step, IntPtr.Add(modMat.DataPointer, y * modStep), cols * 3);
+
+            Mat bgrMat = new Mat();
+            CvInvoke.CvtColor(modMat, bgrMat, inv);
+            Bitmap output = bgrMat.ToBitmap();
+
+            bgrImg.Dispose(); targetMat.Dispose(); modMat.Dispose(); bgrMat.Dispose();
+            return output;
         }
 
-        // ── Requirement 4: 3D Color Space Visualization ───────────────────
+        private int Clamp(int v, int min, int max) => Math.Max(min, Math.Min(max, v));
+
+        // ── 3D Color Space Visualization ──────────────────────────────────
 
         private void btnOpen3D_Click(object sender, EventArgs e)
         {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image first!");
-                return;
-            }
-            ColorSpaceForm csf = new ColorSpaceForm(new Bitmap(pictureBox1.Image));
-            csf.Show();
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
+            new ColorSpaceForm(new Bitmap(pictureBox1.Image)).Show();
         }
 
-        // ── Requirement 7: Color Quantization ─────────────────────────────
+        // ── Color Quantization ────────────────────────────────────────────
 
         private void trkQuantize_ValueChanged(object sender, EventArgs e)
         {
             int levels = trkQuantize.Value;
-            if (levels >= 256)
-                lblQuantize.Text = "Levels per channel: 256  (no quantization)";
-            else
-            {
-                long maxColors = (long)levels * levels * levels;
-                lblQuantize.Text = $"Levels per channel: {levels}  →  {maxColors} max colors";
-            }
+            lblQuantize.Text = levels >= 256
+                ? "Levels per channel: 256  (no quantization)"
+                : $"Levels per channel: {levels}  →  {(long)levels * levels * levels} max colors";
             ApplyQuantization();
         }
 
         private void btnResetQuantize_Click(object sender, EventArgs e)
         {
             trkQuantize.Value = 256;
-            if (pictureBox1.Image != null)
-                pictureBox2.Image = new Bitmap(pictureBox1.Image);
+            if (pictureBox1.Image != null) pictureBox2.Image = new Bitmap(pictureBox1.Image);
         }
 
         private void ApplyQuantization()
         {
             if (pictureBox1.Image == null) return;
-
             int levels = trkQuantize.Value;
-            if (levels >= 256)
-            {
-                pictureBox2.Image = new Bitmap(pictureBox1.Image);
-                return;
-            }
+            if (levels >= 256) { pictureBox2.Image = new Bitmap(pictureBox1.Image); return; }
 
             int step = 256 / levels;
-            Bitmap src = new Bitmap(pictureBox1.Image);
-            Bitmap result = new Bitmap(src.Width, src.Height);
-
+            Bitmap src = new Bitmap(pictureBox1.Image), result = new Bitmap(src.Width, src.Height);
             for (int y = 0; y < src.Height; y++)
                 for (int x = 0; x < src.Width; x++)
                 {
                     Color p = src.GetPixel(x, y);
-                    int r = Clamp((p.R / step) * step, 0, 255);
-                    int g = Clamp((p.G / step) * step, 0, 255);
-                    int b = Clamp((p.B / step) * step, 0, 255);
-                    result.SetPixel(x, y, Color.FromArgb(r, g, b));
+                    result.SetPixel(x, y, Color.FromArgb(
+                        Clamp((p.R / step) * step, 0, 255),
+                        Clamp((p.G / step) * step, 0, 255),
+                        Clamp((p.B / step) * step, 0, 255)));
                 }
-
-            pictureBox2.Image = result;
-            src.Dispose();
+            pictureBox2.Image = result; src.Dispose();
         }
 
-        // ── Requirement 5: Pixel Inspector ────────────────────────────────
+        // ── Pixel Inspector ───────────────────────────────────────────────
 
         private void pictureBox1_MouseClick(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             if (pictureBox1.Image == null) return;
-
-            Point imgCoord = GetImageCoords(pictureBox1, e.Location);
+            Point coord = GetImageCoords(pictureBox1, e.Location);
             Bitmap bmp = new Bitmap(pictureBox1.Image);
-            Color c = bmp.GetPixel(imgCoord.X, imgCoord.Y);
+            Color c = bmp.GetPixel(coord.X, coord.Y);
             bmp.Dispose();
 
             pnlColorSwatch.BackColor = c;
-            lblPixelCoords.Text = $"Pixel: ({imgCoord.X}, {imgCoord.Y})";
+            lblPixelCoords.Text = $"Pixel: ({coord.X}, {coord.Y})";
             lblPixelRGB.Text    = $"RGB:    ({c.R}, {c.G}, {c.B})";
 
             try
@@ -461,99 +398,62 @@ namespace PixelLab
                 Image<Bgr, byte> img = new Image<Bgr, byte>(1, 1);
                 img[0, 0] = new Bgr(c.B, c.G, c.R);
 
-                // HSV — display as degrees / percent / percent
-                Mat hsvMat = new Mat();
-                CvInvoke.CvtColor(img.Mat, hsvMat, ColorConversion.Bgr2Hsv);
-                byte[] hsv = new byte[3];
-                System.Runtime.InteropServices.Marshal.Copy(hsvMat.DataPointer, hsv, 0, 3);
-                int hDeg = hsv[0] * 2;                         // OpenCV stores H as 0-180
-                int sPct = (int)(hsv[1] / 255.0 * 100);
-                int vPct = (int)(hsv[2] / 255.0 * 100);
-                lblPixelHSV.Text = $"HSV:    ({hDeg}°, {sPct}%, {vPct}%)";
-                hsvMat.Dispose();
+                Mat m = new Mat();
+                byte[] buf = new byte[3];
 
-                // YCbCr
-                Mat ycbcrMat = new Mat();
-                CvInvoke.CvtColor(img.Mat, ycbcrMat, ColorConversion.Bgr2YCrCb);
-                byte[] ycbcr = new byte[3];
-                System.Runtime.InteropServices.Marshal.Copy(ycbcrMat.DataPointer, ycbcr, 0, 3);
-                lblPixelYCbCr.Text = $"YCbCr: ({ycbcr[0]}, {ycbcr[1]}, {ycbcr[2]})";
-                ycbcrMat.Dispose();
+                CvInvoke.CvtColor(img.Mat, m, ColorConversion.Bgr2Hsv);
+                Marshal.Copy(m.DataPointer, buf, 0, 3);
+                lblPixelHSV.Text = $"HSV:    ({buf[0] * 2}°, {(int)(buf[1] / 255.0 * 100)}%, {(int)(buf[2] / 255.0 * 100)}%)";
 
-                // YUV
-                Mat yuvMat = new Mat();
-                CvInvoke.CvtColor(img.Mat, yuvMat, ColorConversion.Bgr2Yuv);
-                byte[] yuv = new byte[3];
-                System.Runtime.InteropServices.Marshal.Copy(yuvMat.DataPointer, yuv, 0, 3);
-                lblPixelYUV.Text = $"YUV:    ({yuv[0]}, {yuv[1]}, {yuv[2]})";
-                yuvMat.Dispose();
+                CvInvoke.CvtColor(img.Mat, m, ColorConversion.Bgr2YCrCb);
+                Marshal.Copy(m.DataPointer, buf, 0, 3);
+                lblPixelYCbCr.Text = $"YCbCr: ({buf[0]}, {buf[1]}, {buf[2]})";
 
-                // LAB
-                Mat labMat = new Mat();
-                CvInvoke.CvtColor(img.Mat, labMat, ColorConversion.Bgr2Lab);
-                byte[] lab = new byte[3];
-                System.Runtime.InteropServices.Marshal.Copy(labMat.DataPointer, lab, 0, 3);
-                lblPixelLAB.Text = $"LAB:    ({lab[0]}, {lab[1]}, {lab[2]})";
-                labMat.Dispose();
+                CvInvoke.CvtColor(img.Mat, m, ColorConversion.Bgr2Yuv);
+                Marshal.Copy(m.DataPointer, buf, 0, 3);
+                lblPixelYUV.Text = $"YUV:    ({buf[0]}, {buf[1]}, {buf[2]})";
 
-                img.Dispose();
+                CvInvoke.CvtColor(img.Mat, m, ColorConversion.Bgr2Lab);
+                Marshal.Copy(m.DataPointer, buf, 0, 3);
+                lblPixelLAB.Text = $"LAB:    ({buf[0]}, {buf[1]}, {buf[2]})";
+
+                img.Dispose(); m.Dispose();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Inspector error: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Inspector error: " + ex.Message); }
         }
 
-        // Maps a click position on a Zoom-mode PictureBox to the actual image pixel
         private Point GetImageCoords(System.Windows.Forms.PictureBox pb, Point click)
         {
-            float imgW = pb.Image.Width;
-            float imgH = pb.Image.Height;
+            float imgW = pb.Image.Width, imgH = pb.Image.Height;
             float scale = Math.Min(pb.Width / imgW, pb.Height / imgH);
-            float displayW = imgW * scale;
-            float displayH = imgH * scale;
-            float offsetX = (pb.Width  - displayW) / 2f;
-            float offsetY = (pb.Height - displayH) / 2f;
-            int px = (int)((click.X - offsetX) / scale);
-            int py = (int)((click.Y - offsetY) / scale);
-            px = Math.Max(0, Math.Min(px, (int)imgW - 1));
-            py = Math.Max(0, Math.Min(py, (int)imgH - 1));
+            float offsetX = (pb.Width  - imgW * scale) / 2f;
+            float offsetY = (pb.Height - imgH * scale) / 2f;
+            int px = Math.Max(0, Math.Min((int)((click.X - offsetX) / scale), (int)imgW - 1));
+            int py = Math.Max(0, Math.Min((int)((click.Y - offsetY) / scale), (int)imgH - 1));
             return new Point(px, py);
         }
 
+        // ── Drag & Drop ───────────────────────────────────────────────────
+
         private void pictureBox1_DragEnter(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effect = DragDropEffects.Copy;
-            else
-                e.Effect = DragDropEffects.None;
-        }
+            => e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
 
         private void pictureBox1_DragDrop(object sender, DragEventArgs e)
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files == null || files.Length == 0) return;
+            string fp = files[0], ext = System.IO.Path.GetExtension(fp).ToLower();
+            if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".bmp")
+            { MessageBox.Show("Please drop a .jpg, .png, or .bmp file.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
 
-            string filePath = files[0];
-            string ext = System.IO.Path.GetExtension(filePath).ToLower();
-
-            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp")
-            {
-                Bitmap loadedImage = new Bitmap(filePath);
-                pictureBox1.Image = loadedImage;
-                pictureBox2.Image = new Bitmap(loadedImage);
-
-                System.IO.FileInfo fileInfo = new System.IO.FileInfo(filePath);
-                string fileName = fileInfo.Name;
-                long fileSizeInKB = fileInfo.Length / 1024;
-                string format = System.IO.Path.GetExtension(filePath).TrimStart('.').ToUpper();
-
-                lblImageInfo.Text = $"Image: {fileName}\nSize: {fileSizeInKB} KB\nDimensions: {loadedImage.Width} x {loadedImage.Height}\nFormat: {format}";
-            }
-            else
-            {
-                MessageBox.Show("Please drop a .jpg, .png, or .bmp file.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            Bitmap loaded = new Bitmap(fp);
+            pictureBox1.Image = loaded;
+            pictureBox2.Image = new Bitmap(loaded);
+            var fi = new System.IO.FileInfo(fp);
+            lblImageInfo.Text = $"Image: {fi.Name}\nSize: {fi.Length / 1024} KB\n" +
+                                $"Dimensions: {loaded.Width} x {loaded.Height}\n" +
+                                $"Format: {ext.TrimStart('.').ToUpper()}";
+            SetColorSpace(CsMode.RGB);
         }
     }
 }
