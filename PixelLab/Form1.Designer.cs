@@ -55,6 +55,7 @@ namespace PixelLab
             this.lblQuantize = new System.Windows.Forms.Label();
             this.trkQuantize = new System.Windows.Forms.TrackBar();
             this.btnResetQuantize = new System.Windows.Forms.Button();
+            this.btnOpen2D = new System.Windows.Forms.Button();
             this.btnOpen3D = new System.Windows.Forms.Button();
 
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -367,7 +368,14 @@ namespace PixelLab
             this.btnResetQuantize.UseVisualStyleBackColor = true;
             this.btnResetQuantize.Click += new System.EventHandler(this.btnResetQuantize_Click);
 
-            this.btnOpen3D.Location = new System.Drawing.Point(700, 608);
+            this.btnOpen2D.Location = new System.Drawing.Point(700, 608);
+            this.btnOpen2D.Name = "btnOpen2D";
+            this.btnOpen2D.Size = new System.Drawing.Size(90, 23);
+            this.btnOpen2D.Text = "2D View";
+            this.btnOpen2D.UseVisualStyleBackColor = true;
+            this.btnOpen2D.Click += new System.EventHandler(this.btnOpen2D_Click);
+
+            this.btnOpen3D.Location = new System.Drawing.Point(800, 608);
             this.btnOpen3D.Name = "btnOpen3D";
             this.btnOpen3D.Size = new System.Drawing.Size(90, 23);
             this.btnOpen3D.Text = "3D View";
@@ -388,6 +396,7 @@ namespace PixelLab
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1548, 645);
             this.Controls.Add(this.btnRGB);
+            this.Controls.Add(this.btnOpen2D);
             this.Controls.Add(this.btnOpen3D);
             this.Controls.Add(this.grpQuantize);
             this.Controls.Add(this.grpPixelInfo);
@@ -466,6 +475,7 @@ namespace PixelLab
         private System.Windows.Forms.TrackBar trkQuantize;
         private System.Windows.Forms.Button btnResetQuantize;
         private System.Windows.Forms.Button btnRGB;
+        private System.Windows.Forms.Button btnOpen2D;
         private System.Windows.Forms.Button btnOpen3D;
     }
 }

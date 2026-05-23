@@ -48,6 +48,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColorSpace2DForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ColorSpaceForm.cs">
       <SubType>Form</SubType>
     </Compile>

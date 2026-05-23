@@ -334,7 +334,13 @@ namespace PixelLab
 
         private int Clamp(int v, int min, int max) => Math.Max(min, Math.Min(max, v));
 
-        // ── 3D Color Space Visualization ──────────────────────────────────
+        // ── 2D / 3D Color Space Visualization ────────────────────────────
+
+        private void btnOpen2D_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
+            new ColorSpace2DForm(new Bitmap(pictureBox1.Image)).Show();
+        }
 
         private void btnOpen3D_Click(object sender, EventArgs e)
         {
