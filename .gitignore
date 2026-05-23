@@ -1,0 +1,22 @@
+# Visual Studio build output
+bin/
+obj/
+.vs/
+MigrationBackup/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
