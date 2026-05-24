@@ -27,6 +27,18 @@ namespace PixelLab
         public Form1()
         {
             InitializeComponent();
+            pictureBox2.Paint += pictureBox2_Paint;
+        }
+
+        private void pictureBox2_Paint(object sender, PaintEventArgs e)
+        {
+            if (pictureBox2.Image == null) return;
+            string label = "[DEBUG] Mode: " + _csMode.ToString();
+            using (Font f = new Font("Arial", 12, FontStyle.Bold))
+            {
+                e.Graphics.DrawString(label, f, Brushes.Black, 3, 3);
+                e.Graphics.DrawString(label, f, Brushes.Yellow, 1, 1);
+            }
         }
 
         private void lblImageInfo_Load(object sender, EventArgs e) { }
@@ -76,73 +88,42 @@ namespace PixelLab
         private void button6_Click_1(object sender, EventArgs e)   // HSV
         {
             if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            try
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
-                Image<Hsv, byte> hsv = img.Convert<Hsv, byte>();
-                Image<Bgr, byte> back = hsv.Convert<Bgr, byte>();
-                Bitmap result = new Bitmap(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++) { var p = back[y, x]; result.SetPixel(x, y, Color.FromArgb((int)p.Red, (int)p.Green, (int)p.Blue)); }
-                pictureBox2.Image = result;
-                img.Dispose(); hsv.Dispose(); back.Dispose(); bmp.Dispose();
-            }
-            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            pictureBox2.Image = ConvertColorSpace(ColorConversion.Bgr2Hsv);
             SetColorSpace(CsMode.HSV);
         }
 
         private void button8_Click(object sender, EventArgs e)   // YCbCr
         {
             if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            try
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
-                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2YCrCb);
-                pictureBox2.Image = dst.ToBitmap();
-                img.Dispose(); dst.Dispose(); bmp.Dispose();
-            }
-            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            pictureBox2.Image = ConvertColorSpace(ColorConversion.Bgr2YCrCb);
             SetColorSpace(CsMode.YCbCr);
         }
 
         private void button9_Click(object sender, EventArgs e)   // YUV
         {
             if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            try
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
-                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Yuv);
-                pictureBox2.Image = dst.ToBitmap();
-                img.Dispose(); dst.Dispose(); bmp.Dispose();
-            }
-            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            pictureBox2.Image = ConvertColorSpace(ColorConversion.Bgr2Yuv);
             SetColorSpace(CsMode.YUV);
         }
 
         private void button10_Click(object sender, EventArgs e)   // LAB
         {
             if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            try
-            {
-                Bitmap bmp = new Bitmap(pictureBox1.Image);
-                Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
-                for (int y = 0; y < bmp.Height; y++)
-                    for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
-                Mat dst = new Mat(); CvInvoke.CvtColor(img.Mat, dst, ColorConversion.Bgr2Lab);
-                pictureBox2.Image = dst.ToBitmap();
-                img.Dispose(); dst.Dispose(); bmp.Dispose();
-            }
-            catch (Exception ex) { MessageBox.Show("Error: " + ex.Message); }
+            pictureBox2.Image = ConvertColorSpace(ColorConversion.Bgr2Lab);
             SetColorSpace(CsMode.LAB);
+        }
+
+        private Bitmap ConvertColorSpace(ColorConversion conversion)
+        {
+            Bitmap bmp = new Bitmap(pictureBox1.Image);
+            Image<Bgr, byte> img = new Image<Bgr, byte>(bmp.Width, bmp.Height);
+            for (int y = 0; y < bmp.Height; y++)
+                for (int x = 0; x < bmp.Width; x++) { Color p = bmp.GetPixel(x, y); img[y, x] = new Bgr(p.B, p.G, p.R); }
+            Mat dst = new Mat();
+            CvInvoke.CvtColor(img.Mat, dst, conversion);
+            Bitmap result = dst.ToBitmap();
+            img.Dispose(); dst.Dispose(); bmp.Dispose();
+            return result;
         }
 
         // ── Color space tracker ───────────────────────────────────────────
@@ -158,13 +139,19 @@ namespace PixelLab
             chkR.Checked = true; chkG.Checked = true; chkB.Checked = true;
             _suppressAdjustments = false;
 
-            lblRedOffset.Text   = $"{n[0]}: 0";
+            lblRedOffset.Text = $"{n[0]}: 0";
             lblGreenOffset.Text = $"{n[1]}: 0";
-            lblBlueOffset.Text  = $"{n[2]}: 0";
-            lblBrightness.Text  = "Brightness: 0";
+            lblBlueOffset.Text = $"{n[2]}: 0";
+            lblBrightness.Text = "Brightness: 0";
             // Checkboxes keep fixed text "On" — channel name is shown in the label above
-            grpChannels.Text = $"Channel Controls ({mode})";
-            // pictureBox2 is left as-is; the calling button already set the view
+            grpChannels.Text = $"Channel Controls ({GetModeDescription(mode)})";
+        }
+
+        private string GetModeDescription(CsMode mode)
+        {
+            return mode == CsMode.CMY
+                ? "CMY edits -> RGB preview, no K channel"
+                : $"{mode} edits -> RGB preview";
         }
 
         private void btnRGB_Click(object sender, EventArgs e)
@@ -208,9 +195,9 @@ namespace PixelLab
 
         // ── NUD handlers — drive the trackbar (which then re-syncs the NUD) ─
 
-        private void nudR_ValueChanged(object sender, EventArgs e)         => trkR.Value         = (int)nudR.Value;
-        private void nudG_ValueChanged(object sender, EventArgs e)         => trkG.Value         = (int)nudG.Value;
-        private void nudB_ValueChanged(object sender, EventArgs e)         => trkB.Value         = (int)nudB.Value;
+        private void nudR_ValueChanged(object sender, EventArgs e) => trkR.Value = (int)nudR.Value;
+        private void nudG_ValueChanged(object sender, EventArgs e) => trkG.Value = (int)nudG.Value;
+        private void nudB_ValueChanged(object sender, EventArgs e) => trkB.Value = (int)nudB.Value;
         private void nudBrightness_ValueChanged(object sender, EventArgs e) => trkBrightness.Value = (int)nudBrightness.Value;
 
         private void chkR_CheckedChanged(object sender, EventArgs e) => ApplyChannelAdjustments();
@@ -221,24 +208,7 @@ namespace PixelLab
 
         private void btnResetChannels_Click(object sender, EventArgs e)
         {
-            _suppressAdjustments = true;
-
-            // Reset channel sliders (each fires trkX_ValueChanged → syncs its NUD)
-            trkR.Value = 0; trkG.Value = 0; trkB.Value = 0; trkBrightness.Value = 0;
-
-            // Uncheck then recheck so state is always refreshed
-            chkR.Checked = false; chkR.Checked = true;
-            chkG.Checked = false; chkG.Checked = true;
-            chkB.Checked = false; chkB.Checked = true;
-
-            // Reset quantization (ApplyQuantization checks _suppressAdjustments)
-            trkQuantize.Value = 256;
-
-            _suppressAdjustments = false;
-
-            // Restore original image
-            if (pictureBox1.Image != null)
-                pictureBox2.Image = new Bitmap(pictureBox1.Image);
+            ResetToOriginalRgb();
         }
 
         private void ApplyChannelAdjustments()
@@ -253,35 +223,35 @@ namespace PixelLab
             switch (_csMode)
             {
                 case CsMode.RGB:
-                {
-                    Bitmap result = new Bitmap(src.Width, src.Height);
-                    for (int y = 0; y < src.Height; y++)
-                        for (int x = 0; x < src.Width; x++)
-                        {
-                            Color p = src.GetPixel(x, y);
-                            result.SetPixel(x, y, Color.FromArgb(
-                                on0 ? Clamp(p.R + off0 + brightness, 0, 255) : 0,
-                                on1 ? Clamp(p.G + off1 + brightness, 0, 255) : 0,
-                                on2 ? Clamp(p.B + off2 + brightness, 0, 255) : 0));
-                        }
-                    pictureBox2.Image = result;
-                    break;
-                }
+                    {
+                        Bitmap result = new Bitmap(src.Width, src.Height);
+                        for (int y = 0; y < src.Height; y++)
+                            for (int x = 0; x < src.Width; x++)
+                            {
+                                Color p = src.GetPixel(x, y);
+                                result.SetPixel(x, y, Color.FromArgb(
+                                    on0 ? Clamp(p.R + off0 + brightness, 0, 255) : 0,
+                                    on1 ? Clamp(p.G + off1 + brightness, 0, 255) : 0,
+                                    on2 ? Clamp(p.B + off2 + brightness, 0, 255) : 0));
+                            }
+                        pictureBox2.Image = result;
+                        break;
+                    }
                 case CsMode.CMY:
-                {
-                    Bitmap result = new Bitmap(src.Width, src.Height);
-                    for (int y = 0; y < src.Height; y++)
-                        for (int x = 0; x < src.Width; x++)
-                        {
-                            Color p = src.GetPixel(x, y);
-                            int C = on0 ? Clamp(255 - p.R + off0 + brightness, 0, 255) : 0;
-                            int M = on1 ? Clamp(255 - p.G + off1 + brightness, 0, 255) : 0;
-                            int Y = on2 ? Clamp(255 - p.B + off2 + brightness, 0, 255) : 0;
-                            result.SetPixel(x, y, Color.FromArgb(255 - C, 255 - M, 255 - Y));
-                        }
-                    pictureBox2.Image = result;
-                    break;
-                }
+                    {
+                        Bitmap result = new Bitmap(src.Width, src.Height);
+                        for (int y = 0; y < src.Height; y++)
+                            for (int x = 0; x < src.Width; x++)
+                            {
+                                Color p = src.GetPixel(x, y);
+                                int C = on0 ? Clamp(255 - p.R + off0 + brightness, 0, 255) : 0;
+                                int M = on1 ? Clamp(255 - p.G + off1 + brightness, 0, 255) : 0;
+                                int Y = on2 ? Clamp(255 - p.B + off2 + brightness, 0, 255) : 0;
+                                result.SetPixel(x, y, Color.FromArgb(C, M, Y));
+                            }
+                        pictureBox2.Image = result;
+                        break;
+                    }
                 // HSV: brightness → Value (channel 2)
                 case CsMode.HSV:
                     pictureBox2.Image = ApplyViaEmgu(src, off0, off1, off2, brightness, on0, on1, on2,
@@ -326,7 +296,7 @@ namespace PixelLab
             Marshal.Copy(targetMat.DataPointer, data, 0, rows * step);
 
             int[] offsets = { off0, off1, off2 };
-            bool[] ons    = { on0,  on1,  on2  };
+            bool[] ons = { on0, on1, on2 };
             for (int y = 0; y < rows; y++)
                 for (int x = 0; x < cols; x++)
                 {
@@ -374,8 +344,19 @@ namespace PixelLab
 
         private void btnResetQuantize_Click(object sender, EventArgs e)
         {
+            ResetToOriginalRgb();
+        }
+
+        private void ResetToOriginalRgb()
+        {
+            _suppressAdjustments = true;
             trkQuantize.Value = 256;
-            if (pictureBox1.Image != null) pictureBox2.Image = new Bitmap(pictureBox1.Image);
+            _suppressAdjustments = false;
+
+            SetColorSpace(CsMode.RGB);
+
+            if (pictureBox1.Image != null)
+                pictureBox2.Image = new Bitmap(pictureBox1.Image);
         }
 
         private void ApplyQuantization()
@@ -410,7 +391,7 @@ namespace PixelLab
 
             pnlColorSwatch.BackColor = c;
             lblPixelCoords.Text = $"Pixel: ({coord.X}, {coord.Y})";
-            lblPixelRGB.Text    = $"RGB:    ({c.R}, {c.G}, {c.B})";
+            lblPixelRGB.Text = $"RGB:    ({c.R}, {c.G}, {c.B})";
 
             try
             {
@@ -445,7 +426,7 @@ namespace PixelLab
         {
             float imgW = pb.Image.Width, imgH = pb.Image.Height;
             float scale = Math.Min(pb.Width / imgW, pb.Height / imgH);
-            float offsetX = (pb.Width  - imgW * scale) / 2f;
+            float offsetX = (pb.Width - imgW * scale) / 2f;
             float offsetY = (pb.Height - imgH * scale) / 2f;
             int px = Math.Max(0, Math.Min((int)((click.X - offsetX) / scale), (int)imgW - 1));
             int py = Math.Max(0, Math.Min((int)((click.Y - offsetY) / scale), (int)imgH - 1));
