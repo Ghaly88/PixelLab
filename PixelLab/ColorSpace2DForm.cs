@@ -13,8 +13,7 @@ namespace PixelLab
     public class ColorSpace2DForm : Form
     {
         private readonly List<Color> _pixels = new List<Color>();
-        // 5 views: [0]=HSV wheel, [1]=YCbCr, [2]=YUV, [3]=LAB, [4]=RGB
-        // Each entry: (x, y) normalised 0–1, original pixel color
+  
         private readonly List<(float x, float y, Color c)>[] _views =
             new List<(float, float, Color)>[5];
 
@@ -28,7 +27,6 @@ namespace PixelLab
             BuildUI();
         }
 
-        // ── Sampling & pre-computation ────────────────────────────────────
 
         private void SamplePixels(Bitmap bmp)
         {
@@ -43,7 +41,6 @@ namespace PixelLab
             int n = _pixels.Count;
             if (n == 0) return;
 
-            // Build single-row BGR image from all sampled pixels
             Image<Bgr, byte> img = new Image<Bgr, byte>(n, 1);
             for (int i = 0; i < n; i++)
             {
@@ -51,15 +48,15 @@ namespace PixelLab
                 img[0, i] = new Bgr(p.B, p.G, p.R);
             }
 
-            // HSV:   H(0–180) in ch0, S(0–255) in ch1  →  store H/180 and S/255
+            // HSV:   
             _views[0] = Batch(img, n, ColorConversion.Bgr2Hsv,   0, 1, 1f/180f, 1f/255f);
-            // YCbCr: Y ch0, Cr ch1, Cb ch2  →  Cb vs Cr
+            // YCbCr: 
             _views[1] = Batch(img, n, ColorConversion.Bgr2YCrCb, 2, 1, 1f/255f, 1f/255f);
-            // YUV:   Y ch0, U ch1, V ch2    →  U vs V
+            // YUV:   
             _views[2] = Batch(img, n, ColorConversion.Bgr2Yuv,   1, 2, 1f/255f, 1f/255f);
-            // LAB:   L ch0, a ch1, b ch2    →  a* vs b*
+            // LAB:  
             _views[3] = Batch(img, n, ColorConversion.Bgr2Lab,   1, 2, 1f/255f, 1f/255f);
-            // RGB:   straight from pixels   →  R vs G
+            // RGB:   
             _views[4] = new List<(float, float, Color)>(n);
             for (int i = 0; i < n; i++)
                 _views[4].Add((_pixels[i].R / 255f, _pixels[i].G / 255f, _pixels[i]));
@@ -84,7 +81,6 @@ namespace PixelLab
             return list;
         }
 
-        // ── UI ────────────────────────────────────────────────────────────
 
         private void BuildUI()
         {
@@ -127,7 +123,6 @@ namespace PixelLab
             Controls.Add(top);
         }
 
-        // ── Paint dispatch ────────────────────────────────────────────────
 
         private void OnPaint(object sender, PaintEventArgs e)
         {
