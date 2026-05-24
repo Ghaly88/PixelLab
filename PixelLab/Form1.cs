@@ -50,12 +50,6 @@ namespace PixelLab
             SetColorSpace(CsMode.RGB);
         }
 
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image != null)
-                pictureBox2.Image = new Bitmap(pictureBox1.Image);
-        }
-
         private void button2_Click(object sender, EventArgs e)
         {
             if (pictureBox2.Image == null) { MessageBox.Show("No image to save!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
@@ -168,9 +162,7 @@ namespace PixelLab
             lblGreenOffset.Text = $"{n[1]}: 0";
             lblBlueOffset.Text  = $"{n[2]}: 0";
             lblBrightness.Text  = "Brightness: 0";
-            chkR.Text = n[0].Split(' ')[0] + " On";
-            chkG.Text = n[1].Split(' ')[0] + " On";
-            chkB.Text = n[2].Split(' ')[0] + " On";
+            // Checkboxes keep fixed text "On" — channel name is shown in the label above
             grpChannels.Text = $"Channel Controls ({mode})";
             // pictureBox2 is left as-is; the calling button already set the view
         }
@@ -184,38 +176,67 @@ namespace PixelLab
 
         // ── Channel controls ──────────────────────────────────────────────
 
+        // ── Trackbar handlers — update label + NUD + apply ───────────────
+
         private void trkR_ValueChanged(object sender, EventArgs e)
         {
             lblRedOffset.Text = _csLabels[(int)_csMode][0] + ": " + trkR.Value;
+            nudR.Value = trkR.Value;
             ApplyChannelAdjustments();
         }
 
         private void trkG_ValueChanged(object sender, EventArgs e)
         {
             lblGreenOffset.Text = _csLabels[(int)_csMode][1] + ": " + trkG.Value;
+            nudG.Value = trkG.Value;
             ApplyChannelAdjustments();
         }
 
         private void trkB_ValueChanged(object sender, EventArgs e)
         {
             lblBlueOffset.Text = _csLabels[(int)_csMode][2] + ": " + trkB.Value;
+            nudB.Value = trkB.Value;
             ApplyChannelAdjustments();
         }
 
         private void trkBrightness_ValueChanged(object sender, EventArgs e)
         {
             lblBrightness.Text = "Brightness: " + trkBrightness.Value;
+            nudBrightness.Value = trkBrightness.Value;
             ApplyChannelAdjustments();
         }
+
+        // ── NUD handlers — drive the trackbar (which then re-syncs the NUD) ─
+
+        private void nudR_ValueChanged(object sender, EventArgs e)         => trkR.Value         = (int)nudR.Value;
+        private void nudG_ValueChanged(object sender, EventArgs e)         => trkG.Value         = (int)nudG.Value;
+        private void nudB_ValueChanged(object sender, EventArgs e)         => trkB.Value         = (int)nudB.Value;
+        private void nudBrightness_ValueChanged(object sender, EventArgs e) => trkBrightness.Value = (int)nudBrightness.Value;
 
         private void chkR_CheckedChanged(object sender, EventArgs e) => ApplyChannelAdjustments();
         private void chkG_CheckedChanged(object sender, EventArgs e) => ApplyChannelAdjustments();
         private void chkB_CheckedChanged(object sender, EventArgs e) => ApplyChannelAdjustments();
 
+        // ── Reset All — channel sliders, NUDs, checkboxes, quantization ──
+
         private void btnResetChannels_Click(object sender, EventArgs e)
         {
+            _suppressAdjustments = true;
+
+            // Reset channel sliders (each fires trkX_ValueChanged → syncs its NUD)
             trkR.Value = 0; trkG.Value = 0; trkB.Value = 0; trkBrightness.Value = 0;
-            chkR.Checked = true; chkG.Checked = true; chkB.Checked = true;
+
+            // Uncheck then recheck so state is always refreshed
+            chkR.Checked = false; chkR.Checked = true;
+            chkG.Checked = false; chkG.Checked = true;
+            chkB.Checked = false; chkB.Checked = true;
+
+            // Reset quantization (ApplyQuantization checks _suppressAdjustments)
+            trkQuantize.Value = 256;
+
+            _suppressAdjustments = false;
+
+            // Restore original image
             if (pictureBox1.Image != null)
                 pictureBox2.Image = new Bitmap(pictureBox1.Image);
         }
@@ -336,17 +357,9 @@ namespace PixelLab
 
         // ── 2D / 3D Color Space Visualization ────────────────────────────
 
-        private void btnOpen2D_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            new ColorSpace2DForm(new Bitmap(pictureBox1.Image)).Show();
-        }
+        private void btnOpen2D_Click(object sender, EventArgs e) => new ColorSpace2DForm().Show();
 
-        private void btnOpen3D_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image == null) { MessageBox.Show("Please load an image first!"); return; }
-            new ColorSpaceForm(new Bitmap(pictureBox1.Image)).Show();
-        }
+        private void btnOpen3D_Click(object sender, EventArgs e) => new ColorSpaceForm().Show();
 
         // ── Color Quantization ────────────────────────────────────────────
 
@@ -367,7 +380,7 @@ namespace PixelLab
 
         private void ApplyQuantization()
         {
-            if (pictureBox1.Image == null) return;
+            if (_suppressAdjustments || pictureBox1.Image == null) return;
             int levels = trkQuantize.Value;
             if (levels >= 256) { pictureBox2.Image = new Bitmap(pictureBox1.Image); return; }
 

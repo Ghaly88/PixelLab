@@ -17,7 +17,6 @@ namespace PixelLab
             this.label1 = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
             this.lblImageInfo = new System.Windows.Forms.Label();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.btnRGB = new System.Windows.Forms.Button();
@@ -30,15 +29,19 @@ namespace PixelLab
             this.grpChannels = new System.Windows.Forms.GroupBox();
             this.lblRedOffset = new System.Windows.Forms.Label();
             this.trkR = new System.Windows.Forms.TrackBar();
+            this.nudR = new System.Windows.Forms.NumericUpDown();
             this.chkR = new System.Windows.Forms.CheckBox();
             this.lblGreenOffset = new System.Windows.Forms.Label();
             this.trkG = new System.Windows.Forms.TrackBar();
+            this.nudG = new System.Windows.Forms.NumericUpDown();
             this.chkG = new System.Windows.Forms.CheckBox();
             this.lblBlueOffset = new System.Windows.Forms.Label();
             this.trkB = new System.Windows.Forms.TrackBar();
+            this.nudB = new System.Windows.Forms.NumericUpDown();
             this.chkB = new System.Windows.Forms.CheckBox();
             this.lblBrightness = new System.Windows.Forms.Label();
             this.trkBrightness = new System.Windows.Forms.TrackBar();
+            this.nudBrightness = new System.Windows.Forms.NumericUpDown();
             this.btnResetChannels = new System.Windows.Forms.Button();
             // Pixel Inspector
             this.grpPixelInfo = new System.Windows.Forms.GroupBox();
@@ -61,9 +64,13 @@ namespace PixelLab
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkR)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudR)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkG)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudG)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkB)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudB)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkBrightness)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudBrightness)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkQuantize)).BeginInit();
             this.grpChannels.SuspendLayout();
             this.grpPixelInfo.SuspendLayout();
@@ -103,14 +110,6 @@ namespace PixelLab
             this.button2.Text = "save";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
-
-            // ── button3 (reset image) ─────────────────────────────────────
-            this.button3.Location = new System.Drawing.Point(1094, 608);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
-            this.button3.Text = "reset";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
 
             // ── lblImageInfo ──────────────────────────────────────────────
             this.lblImageInfo.AutoSize = true;
@@ -169,11 +168,16 @@ namespace PixelLab
             this.button10.Click += new System.EventHandler(this.button10_Click);
 
             // ══ Channel Controls GroupBox ══════════════════════════════════
-
+            //
+            // Layout per channel row:
+            //   Label  (x=8,  height ~18)
+            //   TrackBar (x=8,  width=145) | NUD (x=155, width=60) | CheckBox (x=217, width=41)
+            //
+            // Row 1 — channel 0 (R / C / H / Y / Y / L)
             this.lblRedOffset.AutoSize = true;
             this.lblRedOffset.Location = new System.Drawing.Point(8, 22);
             this.lblRedOffset.Name = "lblRedOffset";
-            this.lblRedOffset.Text = "Red Offset: 0";
+            this.lblRedOffset.Text = "Red: 0";
 
             this.trkR.Location = new System.Drawing.Point(8, 40);
             this.trkR.Minimum = -255;
@@ -182,22 +186,32 @@ namespace PixelLab
             this.trkR.TickFrequency = 51;
             this.trkR.SmallChange = 5;
             this.trkR.LargeChange = 25;
-            this.trkR.Size = new System.Drawing.Size(175, 45);
+            this.trkR.Size = new System.Drawing.Size(145, 45);
             this.trkR.Name = "trkR";
             this.trkR.ValueChanged += new System.EventHandler(this.trkR_ValueChanged);
 
-            this.chkR.AutoSize = true;
+            this.nudR.Location = new System.Drawing.Point(155, 52);
+            this.nudR.Minimum = -255;
+            this.nudR.Maximum = 255;
+            this.nudR.Value = 0;
+            this.nudR.Size = new System.Drawing.Size(60, 22);
+            this.nudR.Name = "nudR";
+            this.nudR.ValueChanged += new System.EventHandler(this.nudR_ValueChanged);
+
+            this.chkR.AutoSize = false;
             this.chkR.Checked = true;
             this.chkR.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkR.Location = new System.Drawing.Point(192, 50);
+            this.chkR.Location = new System.Drawing.Point(217, 52);
+            this.chkR.Size = new System.Drawing.Size(41, 20);
             this.chkR.Name = "chkR";
-            this.chkR.Text = "R On";
+            this.chkR.Text = "On";
             this.chkR.CheckedChanged += new System.EventHandler(this.chkR_CheckedChanged);
 
+            // Row 2 — channel 1 (G / M / S / Cr / U / a*)
             this.lblGreenOffset.AutoSize = true;
             this.lblGreenOffset.Location = new System.Drawing.Point(8, 92);
             this.lblGreenOffset.Name = "lblGreenOffset";
-            this.lblGreenOffset.Text = "Green Offset: 0";
+            this.lblGreenOffset.Text = "Green: 0";
 
             this.trkG.Location = new System.Drawing.Point(8, 110);
             this.trkG.Minimum = -255;
@@ -206,22 +220,32 @@ namespace PixelLab
             this.trkG.TickFrequency = 51;
             this.trkG.SmallChange = 5;
             this.trkG.LargeChange = 25;
-            this.trkG.Size = new System.Drawing.Size(175, 45);
+            this.trkG.Size = new System.Drawing.Size(145, 45);
             this.trkG.Name = "trkG";
             this.trkG.ValueChanged += new System.EventHandler(this.trkG_ValueChanged);
 
-            this.chkG.AutoSize = true;
+            this.nudG.Location = new System.Drawing.Point(155, 122);
+            this.nudG.Minimum = -255;
+            this.nudG.Maximum = 255;
+            this.nudG.Value = 0;
+            this.nudG.Size = new System.Drawing.Size(60, 22);
+            this.nudG.Name = "nudG";
+            this.nudG.ValueChanged += new System.EventHandler(this.nudG_ValueChanged);
+
+            this.chkG.AutoSize = false;
             this.chkG.Checked = true;
             this.chkG.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkG.Location = new System.Drawing.Point(192, 120);
+            this.chkG.Location = new System.Drawing.Point(217, 122);
+            this.chkG.Size = new System.Drawing.Size(41, 20);
             this.chkG.Name = "chkG";
-            this.chkG.Text = "G On";
+            this.chkG.Text = "On";
             this.chkG.CheckedChanged += new System.EventHandler(this.chkG_CheckedChanged);
 
+            // Row 3 — channel 2 (B / Y / V / Cb / V / b*)
             this.lblBlueOffset.AutoSize = true;
             this.lblBlueOffset.Location = new System.Drawing.Point(8, 162);
             this.lblBlueOffset.Name = "lblBlueOffset";
-            this.lblBlueOffset.Text = "Blue Offset: 0";
+            this.lblBlueOffset.Text = "Blue: 0";
 
             this.trkB.Location = new System.Drawing.Point(8, 180);
             this.trkB.Minimum = -255;
@@ -230,18 +254,28 @@ namespace PixelLab
             this.trkB.TickFrequency = 51;
             this.trkB.SmallChange = 5;
             this.trkB.LargeChange = 25;
-            this.trkB.Size = new System.Drawing.Size(175, 45);
+            this.trkB.Size = new System.Drawing.Size(145, 45);
             this.trkB.Name = "trkB";
             this.trkB.ValueChanged += new System.EventHandler(this.trkB_ValueChanged);
 
-            this.chkB.AutoSize = true;
+            this.nudB.Location = new System.Drawing.Point(155, 192);
+            this.nudB.Minimum = -255;
+            this.nudB.Maximum = 255;
+            this.nudB.Value = 0;
+            this.nudB.Size = new System.Drawing.Size(60, 22);
+            this.nudB.Name = "nudB";
+            this.nudB.ValueChanged += new System.EventHandler(this.nudB_ValueChanged);
+
+            this.chkB.AutoSize = false;
             this.chkB.Checked = true;
             this.chkB.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkB.Location = new System.Drawing.Point(192, 190);
+            this.chkB.Location = new System.Drawing.Point(217, 192);
+            this.chkB.Size = new System.Drawing.Size(41, 20);
             this.chkB.Name = "chkB";
-            this.chkB.Text = "B On";
+            this.chkB.Text = "On";
             this.chkB.CheckedChanged += new System.EventHandler(this.chkB_CheckedChanged);
 
+            // Row 4 — Brightness (no channel checkbox)
             this.lblBrightness.AutoSize = true;
             this.lblBrightness.Location = new System.Drawing.Point(8, 232);
             this.lblBrightness.Name = "lblBrightness";
@@ -254,44 +288,54 @@ namespace PixelLab
             this.trkBrightness.TickFrequency = 51;
             this.trkBrightness.SmallChange = 5;
             this.trkBrightness.LargeChange = 25;
-            this.trkBrightness.Size = new System.Drawing.Size(240, 45);
+            this.trkBrightness.Size = new System.Drawing.Size(145, 45);
             this.trkBrightness.Name = "trkBrightness";
             this.trkBrightness.ValueChanged += new System.EventHandler(this.trkBrightness_ValueChanged);
 
+            this.nudBrightness.Location = new System.Drawing.Point(155, 262);
+            this.nudBrightness.Minimum = -255;
+            this.nudBrightness.Maximum = 255;
+            this.nudBrightness.Value = 0;
+            this.nudBrightness.Size = new System.Drawing.Size(60, 22);
+            this.nudBrightness.Name = "nudBrightness";
+            this.nudBrightness.ValueChanged += new System.EventHandler(this.nudBrightness_ValueChanged);
+
             this.btnResetChannels.Location = new System.Drawing.Point(8, 305);
             this.btnResetChannels.Name = "btnResetChannels";
-            this.btnResetChannels.Size = new System.Drawing.Size(240, 26);
-            this.btnResetChannels.Text = "Reset Channel Sliders";
+            this.btnResetChannels.Size = new System.Drawing.Size(250, 26);
+            this.btnResetChannels.Text = "Reset All";
             this.btnResetChannels.UseVisualStyleBackColor = true;
             this.btnResetChannels.Click += new System.EventHandler(this.btnResetChannels_Click);
 
             this.grpChannels.Controls.Add(this.lblRedOffset);
             this.grpChannels.Controls.Add(this.trkR);
+            this.grpChannels.Controls.Add(this.nudR);
             this.grpChannels.Controls.Add(this.chkR);
             this.grpChannels.Controls.Add(this.lblGreenOffset);
             this.grpChannels.Controls.Add(this.trkG);
+            this.grpChannels.Controls.Add(this.nudG);
             this.grpChannels.Controls.Add(this.chkG);
             this.grpChannels.Controls.Add(this.lblBlueOffset);
             this.grpChannels.Controls.Add(this.trkB);
+            this.grpChannels.Controls.Add(this.nudB);
             this.grpChannels.Controls.Add(this.chkB);
             this.grpChannels.Controls.Add(this.lblBrightness);
             this.grpChannels.Controls.Add(this.trkBrightness);
+            this.grpChannels.Controls.Add(this.nudBrightness);
             this.grpChannels.Controls.Add(this.btnResetChannels);
             this.grpChannels.Location = new System.Drawing.Point(1275, 53);
             this.grpChannels.Name = "grpChannels";
-            this.grpChannels.Size = new System.Drawing.Size(260, 345);
+            this.grpChannels.Size = new System.Drawing.Size(270, 345);
             this.grpChannels.TabStop = false;
             this.grpChannels.Text = "Channel Controls";
 
             // ══ Pixel Inspector GroupBox ═══════════════════════════════════
 
-            // Row 1: hint text (full width, no overlap)
             this.lblInspectHint.AutoSize = true;
             this.lblInspectHint.Location = new System.Drawing.Point(8, 20);
             this.lblInspectHint.Name = "lblInspectHint";
             this.lblInspectHint.Text = "Click original image to inspect";
 
-            // Row 2: colour swatch + pixel coordinates side by side
             this.pnlColorSwatch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlColorSwatch.Location = new System.Drawing.Point(8, 42);
             this.pnlColorSwatch.Name = "pnlColorSwatch";
@@ -303,7 +347,6 @@ namespace PixelLab
             this.lblPixelCoords.Name = "lblPixelCoords";
             this.lblPixelCoords.Text = "Pixel: -";
 
-            // Rows 3-7: one color space per line
             this.lblPixelRGB.AutoSize = true;
             this.lblPixelRGB.Location = new System.Drawing.Point(8, 72);
             this.lblPixelRGB.Name = "lblPixelRGB";
@@ -339,7 +382,7 @@ namespace PixelLab
             this.grpPixelInfo.Controls.Add(this.lblPixelLAB);
             this.grpPixelInfo.Location = new System.Drawing.Point(1275, 405);
             this.grpPixelInfo.Name = "grpPixelInfo";
-            this.grpPixelInfo.Size = new System.Drawing.Size(260, 178);
+            this.grpPixelInfo.Size = new System.Drawing.Size(270, 178);
             this.grpPixelInfo.TabStop = false;
             this.grpPixelInfo.Text = "Pixel Inspector";
 
@@ -394,7 +437,7 @@ namespace PixelLab
             // ── Form ──────────────────────────────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1548, 645);
+            this.ClientSize = new System.Drawing.Size(1558, 645);
             this.Controls.Add(this.btnRGB);
             this.Controls.Add(this.btnOpen2D);
             this.Controls.Add(this.btnOpen3D);
@@ -408,7 +451,6 @@ namespace PixelLab
             this.Controls.Add(this.button6);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.lblImageInfo);
-            this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label1);
@@ -419,9 +461,13 @@ namespace PixelLab
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkR)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudR)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkG)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudG)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkB)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudB)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkBrightness)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudBrightness)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trkQuantize)).EndInit();
             this.grpChannels.ResumeLayout(false);
             this.grpChannels.PerformLayout();
@@ -437,7 +483,6 @@ namespace PixelLab
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Label lblImageInfo;
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.Button button6;
@@ -449,15 +494,19 @@ namespace PixelLab
         private System.Windows.Forms.GroupBox grpChannels;
         private System.Windows.Forms.Label lblRedOffset;
         private System.Windows.Forms.TrackBar trkR;
+        private System.Windows.Forms.NumericUpDown nudR;
         private System.Windows.Forms.CheckBox chkR;
         private System.Windows.Forms.Label lblGreenOffset;
         private System.Windows.Forms.TrackBar trkG;
+        private System.Windows.Forms.NumericUpDown nudG;
         private System.Windows.Forms.CheckBox chkG;
         private System.Windows.Forms.Label lblBlueOffset;
         private System.Windows.Forms.TrackBar trkB;
+        private System.Windows.Forms.NumericUpDown nudB;
         private System.Windows.Forms.CheckBox chkB;
         private System.Windows.Forms.Label lblBrightness;
         private System.Windows.Forms.TrackBar trkBrightness;
+        private System.Windows.Forms.NumericUpDown nudBrightness;
         private System.Windows.Forms.Button btnResetChannels;
         // Pixel Inspector
         private System.Windows.Forms.GroupBox grpPixelInfo;
